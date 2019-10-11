@@ -12,6 +12,8 @@ import org.slf4j.LoggerFactory;
 
 import com.froxynetwork.froxybungee.websocket.CustomInteractionImpl;
 import com.froxynetwork.froxybungee.websocket.WebSocketManager;
+import com.froxynetwork.froxybungee.websocket.commands.ServerRegisterCommander;
+import com.froxynetwork.froxybungee.websocket.commands.ServerUnregisterCommander;
 import com.froxynetwork.froxygame.languages.LanguageManager;
 import com.froxynetwork.froxynetwork.network.NetworkManager;
 import com.froxynetwork.froxynetwork.network.output.RestException;
@@ -97,6 +99,7 @@ public class FroxyBungee extends Plugin {
 			LOG.info("Done");
 
 			LOG.info("Starting Thread for WebSocket checker ...");
+			initializeWebSocket(webSocketManager);
 			webSocketManager.startThread();
 			LOG.info("Done");
 
@@ -142,5 +145,20 @@ public class FroxyBungee extends Plugin {
 			if (str == null || "".equalsIgnoreCase(str.trim()))
 				return false;
 		return true;
+	}
+
+	/**
+	 * Initialize the WebSocket (events, etc)
+	 * 
+	 * @param webSocketManager
+	 */
+	private void initializeWebSocket(WebSocketManager webSocketManager) {
+		webSocketManager.getWebSocketManager().registerWebSocketAuthentified(() -> {
+			// Initialize commands
+			// Register servers
+			webSocketManager.getWebSocketManager().registerCommand(new ServerRegisterCommander());
+			// Unregister servers
+			webSocketManager.getWebSocketManager().registerCommand(new ServerUnregisterCommander());
+		});
 	}
 }

@@ -92,7 +92,7 @@
 		<dependency>
 			<groupId>com.github.froxynetwork</groupId>
 			<artifactId>froxynetwork</artifactId>
-			<version>feature~websocket-503ea369cb-1</version>
+			<version>feature~websocket-77f7798ab9-1</version>
 		</dependency>
 
 		<!-- Game -->
