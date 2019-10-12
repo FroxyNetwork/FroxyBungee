@@ -125,7 +125,7 @@ public class FroxyBungee extends Plugin {
 	 */
 	private String[] readAuthFile() {
 		// The file name
-		String fileName = "plugins" + File.separator + "FroxyCore" + File.separator + "auth";
+		String fileName = "plugins" + File.separator + "FroxyBungee" + File.separator + "auth";
 		try (BufferedReader reader = new BufferedReader(new FileReader(fileName))) {
 			String[] result = new String[] { reader.readLine(), reader.readLine() };
 			return result;
