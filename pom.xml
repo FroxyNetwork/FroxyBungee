@@ -92,14 +92,14 @@
 		<dependency>
 			<groupId>com.github.froxynetwork</groupId>
 			<artifactId>froxynetwork</artifactId>
-			<version>feature~websocket-77f7798ab9-1</version>
+			<version>feature~websocket-3492474dd2-1</version>
 		</dependency>
 
 		<!-- Game -->
 		<dependency>
 			<groupId>com.github.froxynetwork</groupId>
 			<artifactId>froxygame</artifactId>
-			<version>0.0.3</version>
+			<version>develop-d01c839f40-1</version>
 		</dependency>
 
 		<!-- BungeeCord -->
