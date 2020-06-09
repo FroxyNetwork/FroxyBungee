@@ -5,37 +5,34 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
-import java.net.URISyntaxException;
+import java.net.URI;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.froxynetwork.froxybungee.websocket.CustomInteractionImpl;
+import com.froxynetwork.froxybungee.server.ServerManager;
 import com.froxynetwork.froxybungee.websocket.WebSocketManager;
-import com.froxynetwork.froxybungee.websocket.commands.ServerRegisterCommander;
-import com.froxynetwork.froxybungee.websocket.commands.ServerUnregisterCommander;
 import com.froxynetwork.froxygame.languages.LanguageManager;
 import com.froxynetwork.froxynetwork.network.NetworkManager;
-import com.froxynetwork.froxynetwork.network.output.RestException;
+import com.froxynetwork.froxynetwork.network.output.data.server.ServerDataOutput.Server;
 
 import net.md_5.bungee.api.plugin.Plugin;
 
 /**
- * FroxyBungee
- * Copyright (C) 2019 FroxyNetwork
+ * FroxyBungee Copyright (C) 2019 FroxyNetwork
  * 
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License as published by the Free Software
+ * Foundation, either version 3 of the License, or (at your option) any later
+ * version.
  * 
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+ * details.
  * 
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU General Public License along with
+ * this program. If not, see <http://www.gnu.org/licenses/>.
  *
  * @author 0ddlyoko
  */
@@ -62,47 +59,33 @@ public class FroxyBungee extends Plugin {
 			LOG.info("Contacting REST ...");
 			// Contacting rest
 			NetworkManager networkManager = new NetworkManager(config.getString("url"), auth[0], auth[1]);
-			try {
-				// Used to generate the token
-				networkManager.getNetwork().getServerConfigService().syncGetServerConfig();
-			} catch (RestException ex) {
-				LOG.error("Error {} while contacting REST server:", ex.getError().getErrorId());
-				LOG.error("", ex);
-				getProxy().stop();
-				return;
-			} catch (Exception ex) {
-				LOG.error("Error while contacting REST server:", ex);
-				getProxy().stop();
-				return;
-			}
+			Server srv = networkManager.getNetwork().getServerService().syncGetServer(auth[0]);
 			LOG.info("Done");
 
-			LOG.info("Contacting WebSocket server");
-			WebSocketManager webSocketManager;
-			try {
-				webSocketManager = new WebSocketManager(config.getString("websocket"), auth[0],
-						new CustomInteractionImpl());
-			} catch (URISyntaxException ex) {
-				LOG.error("Invalid url while initializing WebSocket: ", ex);
-				getProxy().stop();
-				return;
-			}
+			LOG.info("Loading Managers ...");
+			LOG.info("WebSocketManager ...");
+			WebSocketManager webSocketManager = new WebSocketManager(new URI(config.getString("websocket")));
+			LOG.info("LanguageManager ...");
+			// Register lang directory. Doing that will load this class
+			File lang = new File("plugins" + File.separator + "FroxyBungee" + File.separator + "lang");
+			LanguageManager.register(lang);
+			LOG.info("ServerManager ...");
+			ServerManager serverManager = new ServerManager();
+			LOG.info("Done");
+
 			LOG.info("Doing some stuff ...");
 			// Initializing api
-			Froxy.init(webSocketManager, networkManager, getProxy());
+			Froxy.init(webSocketManager, networkManager, serverManager, getProxy(), srv);
 			LOG.info("Done");
 
 			LOG.info("Starting Thread for WebSocket checker ...");
-			initializeWebSocket(webSocketManager);
-			webSocketManager.startThread();
+			webSocketManager.load();
 			LOG.info("Done");
 
-			// Register lang directory
-			File lang = new File("plugins" + File.separator + "FroxyBungee" + File.separator + "lang");
-			LanguageManager.register(lang);
 			LOG.info("Bungee started !");
 		} catch (Exception ex) {
 			LOG.error("An error has occured while loading the bungee: ", ex);
+			// Stop it
 			getProxy().stop();
 		}
 	}
@@ -115,7 +98,7 @@ public class FroxyBungee extends Plugin {
 	}
 
 	/**
-	 * @return [id, client_id, client_secret]
+	 * @return [id, client_secret]
 	 */
 	private String[] readAuthFile() {
 		// The file name
@@ -139,20 +122,5 @@ public class FroxyBungee extends Plugin {
 			if (str == null || "".equalsIgnoreCase(str.trim()))
 				return false;
 		return true;
-	}
-
-	/**
-	 * Initialize the WebSocket (events, etc)
-	 * 
-	 * @param webSocketManager
-	 */
-	private void initializeWebSocket(WebSocketManager webSocketManager) {
-		webSocketManager.getWebSocketManager().registerWebSocketAuthentified(() -> {
-			// Initialize commands
-			// Register servers
-			webSocketManager.getWebSocketManager().registerCommand(new ServerRegisterCommander());
-			// Unregister servers
-			webSocketManager.getWebSocketManager().registerCommand(new ServerUnregisterCommander());
-		});
 	}
 }
