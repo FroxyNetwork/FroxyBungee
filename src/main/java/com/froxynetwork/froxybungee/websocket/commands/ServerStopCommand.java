@@ -4,7 +4,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.froxynetwork.froxynetwork.network.websocket.IWebSocketCommander;
-import com.froxynetwork.froxynetwork.network.websocket.WebSocketClientImpl;
 
 import net.md_5.bungee.api.ProxyServer;
 
