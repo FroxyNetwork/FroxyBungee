@@ -29,11 +29,7 @@ import com.froxynetwork.froxynetwork.network.websocket.IWebSocketCommander;
 public class ServerRegisterCommander implements IWebSocketCommander {
 	private final Logger LOG = LoggerFactory.getLogger(getClass());
 
-	private Pattern spacePattern;
-
-	public ServerRegisterCommander() {
-		spacePattern = Pattern.compile(" ");
-	}
+	private Pattern spacePattern = Pattern.compile(" ");
 
 	@Override
 	public String name() {
@@ -47,26 +43,20 @@ public class ServerRegisterCommander implements IWebSocketCommander {
 
 	@Override
 	public void onReceive(String message) {
-		// message = <serverId | host | port | motd>
+		// message = <id> <type>
 		String[] split = spacePattern.split(message);
-		if (split.length < 4) {
+		if (split.length < 2) {
 			// Error
 			LOG.error("Invalid message: {}", message);
 			return;
 		}
-		String serverId = split[0];
-		String host = split[1];
-		String strPort = split[2];
-		int port = -1;
-		// 3 = 3 spaces
-		String motd = message.substring(split[0].length() + split[1].length() + split[2].length() + 3);
-		try {
-			port = Integer.parseInt(strPort);
-		} catch (NumberFormatException ex) {
-			LOG.error("Cannot parse port {}", strPort);
-		}
+		String id = split[0];
+		String type = split[1];
+		// Do not continue if it's a bungee
+		if (type.equalsIgnoreCase("BUNGEE"))
+			return;
 
 		// All seams ok
-		Froxy.getServerManager().registerServer(serverId, host, port, motd);
+		Froxy.getServerManager().registerServer(id, type);
 	}
 }

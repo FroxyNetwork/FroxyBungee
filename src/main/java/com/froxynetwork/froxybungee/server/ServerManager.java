@@ -11,6 +11,8 @@ import com.froxynetwork.froxybungee.Froxy;
 import com.froxynetwork.froxynetwork.network.output.Callback;
 import com.froxynetwork.froxynetwork.network.output.RestException;
 import com.froxynetwork.froxynetwork.network.output.data.server.ServerDataOutput;
+import com.froxynetwork.froxynetwork.network.output.data.server.ServerListDataOutput;
+import com.froxynetwork.froxynetwork.network.service.ServerService.Type;
 
 import net.md_5.bungee.api.ProxyServer;
 import net.md_5.bungee.api.config.ServerInfo;
@@ -46,36 +48,56 @@ public class ServerManager {
 
 	public ServerManager() {
 		servers = new HashMap<>();
+		// Clear servers
+		Froxy.bungee().getServers().clear();
+		// Load all servers
+		try {
+			ServerListDataOutput.ServerList list = Froxy.getNetworkManager().getNetwork().getServerService()
+					.syncGetServers(Type.SERVER);
+			LOG.info("Registering {} servers", list.getServers().size());
+			for (ServerDataOutput.Server srv : list.getServers()) {
+				// Register server
+				_registerServer(srv);
+			}
+		} catch (RestException ex) {
+			ex.printStackTrace();
+		} catch (Exception ex) {
+			ex.printStackTrace();
+		}
 	}
 
-	public void registerServer(String id, String host, int port, String motd) {
-		LOG.info("Registering a new server in async mode ! (id = {}, host = {}, port = {}, motd = {})", id, host, port,
-				motd);
+	public void registerServer(String id, String type) {
+		LOG.info("Registering a new server in async mode ! (id = {})", id);
 		Froxy.getNetworkManager().getNetwork().getServerService().asyncGetServer(id,
 				new Callback<ServerDataOutput.Server>() {
 
 					@Override
 					public void onResponse(ServerDataOutput.Server srv) {
 						// All is ok
-						LOG.info("Ok for server {}", id);
-						Server server = new Server(srv);
-						servers.put(id, server);
-						LOG.info("Registering server {} in Bungee", id);
-						ServerInfo info = ProxyServer.getInstance().constructServerInfo(id,
-								InetSocketAddress.createUnresolved(host, port), motd, false);
-						Froxy.bungee().getServers().put(id, info);
+						_registerServer(srv);
 					}
 
 					@Override
 					public void onFailure(RestException ex) {
-						// TODO
+						LOG.error("Error while retrieving server {}", id);
+						LOG.error("", ex);
 					}
 
 					@Override
 					public void onFatalFailure(Throwable ex) {
-						// TODO
+						LOG.error("Fatal Error while retrieving server {}", id);
+						LOG.error("", ex);
 					}
 				});
+	}
+
+	private void _registerServer(ServerDataOutput.Server srv) {
+		LOG.debug("Registering server {}, host = {}, port = {}", srv.getId(), srv.getIp(), srv.getPort());
+		Server server = new Server(srv);
+		servers.put(srv.getId(), server);
+		ServerInfo info = ProxyServer.getInstance().constructServerInfo(srv.getId(),
+				InetSocketAddress.createUnresolved(srv.getIp(), srv.getPort()), "", false);
+		Froxy.bungee().getServers().put(srv.getId(), info);
 	}
 
 	public void unregisterServer(String id) {
