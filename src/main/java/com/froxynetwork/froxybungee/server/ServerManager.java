@@ -67,6 +67,10 @@ public class ServerManager {
 	}
 
 	public void registerServer(String id, String type) {
+		// Do not continue if it's a bungee
+		if ("BUNGEE".equalsIgnoreCase(type))
+			return;
+
 		LOG.info("Registering a new server in async mode ! (id = {})", id);
 		Froxy.getNetworkManager().getNetwork().getServerService().asyncGetServer(id,
 				new Callback<ServerDataOutput.Server>() {
@@ -100,8 +104,13 @@ public class ServerManager {
 		Froxy.bungee().getServers().put(srv.getId(), info);
 	}
 
-	public void unregisterServer(String id) {
+	public void unregisterServer(String id, String type) {
+		// Do not continue if it's a bungee
+		if ("BUNGEE".equalsIgnoreCase(type))
+			return;
+
 		LOG.info("Unregistering server {} !", id);
+		servers.remove(id);
 		ServerInfo si = ProxyServer.getInstance().getServers().remove(id);
 		if (si == null) {
 			// Whut ?

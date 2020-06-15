@@ -1,5 +1,10 @@
 package com.froxynetwork.froxybungee.websocket.commands;
 
+import java.util.regex.Pattern;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.froxynetwork.froxybungee.Froxy;
 import com.froxynetwork.froxynetwork.network.websocket.IWebSocketCommander;
 
@@ -22,21 +27,32 @@ import com.froxynetwork.froxynetwork.network.websocket.IWebSocketCommander;
  * @author 0ddlyoko
  */
 public class ServerUnregisterCommander implements IWebSocketCommander {
+	private final Logger LOG = LoggerFactory.getLogger(getClass());
+	private Pattern spacePattern = Pattern.compile(" ");
 
 	@Override
 	public String name() {
-		return "WebSocketUnregister";
+		return "unregister";
 	}
 
 	@Override
 	public String description() {
-		return "Unregister a new Server";
+		return "On server close";
 	}
 
 	@Override
 	public void onReceive(String message) {
-		// <serverId>
-		String serverId = message;
-		Froxy.getServerManager().unregisterServer(serverId);
+		// unregister <id> <type>
+		String[] split = spacePattern.split(message);
+		if (split.length < 2) {
+			// Error
+			LOG.error("Invalid message: {}", message);
+			return;
+		}
+		String id = split[0];
+		String type = split[1];
+		
+		// All seams ok
+		Froxy.getServerManager().unregisterServer(id, type);
 	}
 }

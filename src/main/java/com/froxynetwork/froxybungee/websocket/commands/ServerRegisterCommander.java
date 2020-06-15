@@ -28,22 +28,21 @@ import com.froxynetwork.froxynetwork.network.websocket.IWebSocketCommander;
  */
 public class ServerRegisterCommander implements IWebSocketCommander {
 	private final Logger LOG = LoggerFactory.getLogger(getClass());
-
 	private Pattern spacePattern = Pattern.compile(" ");
 
 	@Override
 	public String name() {
-		return "WebSocketRegister";
+		return "register";
 	}
 
 	@Override
 	public String description() {
-		return "Register a new Server";
+		return "On server start";
 	}
 
 	@Override
 	public void onReceive(String message) {
-		// message = <id> <type>
+		// register <id> <type>
 		String[] split = spacePattern.split(message);
 		if (split.length < 2) {
 			// Error
@@ -52,9 +51,6 @@ public class ServerRegisterCommander implements IWebSocketCommander {
 		}
 		String id = split[0];
 		String type = split[1];
-		// Do not continue if it's a bungee
-		if (type.equalsIgnoreCase("BUNGEE"))
-			return;
 
 		// All seams ok
 		Froxy.getServerManager().registerServer(id, type);
