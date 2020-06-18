@@ -15,6 +15,7 @@ import com.froxynetwork.froxybungee.websocket.WebSocketManager;
 import com.froxynetwork.froxygame.languages.LanguageManager;
 import com.froxynetwork.froxynetwork.network.NetworkManager;
 import com.froxynetwork.froxynetwork.network.output.data.server.ServerDataOutput.Server;
+import com.google.common.io.Files;
 
 import net.md_5.bungee.api.plugin.Plugin;
 
@@ -44,6 +45,11 @@ public class FroxyBungee extends Plugin {
 	public void onEnable() {
 		try {
 			LOG.info("Starting Bungee, please wait");
+			// auth file should be located at "plugins/FroxyCore/auth" (because of start.sh
+			// script).
+			// Move this file into correct directory
+			Files.move(new File("plugins" + File.separator + "FroxyCore" + File.separator + "auth"),
+					new File("plugins" + File.separator + "FroxyBungee" + File.separator + "auth"));
 			// Config
 			config = new Config(new File("plugins" + File.separator + "FroxyBungee" + File.separator + "config.yml"));
 			LOG.info("Reading auth file ...");
