@@ -1,16 +1,26 @@
 package com.froxynetwork.froxybungee.websocket;
 
+import java.net.URI;
 import java.net.URISyntaxException;
 
+import org.java_websocket.framing.CloseFrame;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.froxynetwork.froxybungee.Froxy;
+import com.froxynetwork.froxybungee.websocket.commands.ServerRegisterCommander;
+import com.froxynetwork.froxybungee.websocket.commands.ServerStopCommand;
+import com.froxynetwork.froxybungee.websocket.commands.ServerUnregisterCommander;
+import com.froxynetwork.froxynetwork.network.websocket.WebSocketClientImpl;
+import com.froxynetwork.froxynetwork.network.websocket.WebSocketFactory;
+import com.froxynetwork.froxynetwork.network.websocket.auth.WebSocketTokenAuthentication;
+import com.froxynetwork.froxynetwork.network.websocket.modules.WebSocketAutoReconnectModule;
 
 import lombok.Getter;
 
 /**
  * FroxyBungee
+ * 
  * Copyright (C) 2019 FroxyNetwork
  * 
  * This program is free software: you can redistribute it and/or modify
@@ -34,131 +44,56 @@ import lombok.Getter;
 public class WebSocketManager {
 	private final Logger LOG = LoggerFactory.getLogger(getClass());
 
-	private String url;
-	private String clientId;
-
+	private URI websocketURI;
 	@Getter
-	private com.froxynetwork.froxynetwork.network.websocket.WebSocketManager webSocketManager;
+	private WebSocketClientImpl client;
+	private boolean stop = false;
 
-	private boolean runThread;
-	private int timeout = 10;
-	private Thread connectThread;
-	private Thread thread;
-
-	public WebSocketManager(String url, String clientId, CustomInteractionImpl customInteractionImpl)
-			throws URISyntaxException {
-		this.webSocketManager = new com.froxynetwork.froxynetwork.network.websocket.WebSocketManager(url,
-				customInteractionImpl);
-		this.clientId = clientId;
-
-		// This Thread is used to reconnect to the WebSocket if there is a problem (like
-		// a disconnection)
-		this.thread = new Thread(() -> {
-			// First loop if we interrupt the Thread
-			while (!Thread.interrupted() && runThread) {
-				// If we are not connected, we try to connect to the WebSocket
-				if (!webSocketManager.isConnected()) {
-					LOG.info("WebSocket not connected, initializing connection ...");
-					// Not connected
-					if (connectThread != null) {
-						// Already connecting ...
-						LOG.info("Checking again in 2 seconds");
-						try {
-							// Wait 2 seconds
-							Thread.sleep(2000);
-						} catch (InterruptedException ex) {
-							// No need to catch this exception
-						}
-						if (webSocketManager.isConnected()) {
-							LOG.info("Nevermind, we're now connected");
-						} else {
-							// Still not connected
-							LOG.error("Still not connected, disconnecting ...");
-							// We interrupt the Thread
-							if (connectThread != null && connectThread.isAlive())
-								connectThread.interrupt();
-							// Disconnecting ...
-							webSocketManager.disconnect();
-							connectThread = null;
-						}
-					} else {
-						// Connect
-						connect();
-					}
-				} else if (!webSocketManager.isAuthentified()) {
-					LOG.info("The bungee is connected to the WebSocket but not authentified, checking in 2 seconds");
-					try {
-						// Wait 2 seconds
-						Thread.sleep(2000);
-					} catch (InterruptedException ex) {
-						// No need to catch this exception
-					}
-					if (webSocketManager.isAuthentified()) {
-						LOG.info("Nevermind, we're now connected");
-					} else {
-						// Not authentified
-						LOG.error("Still not authentified, disconnecting ...");
-						// We interrupt the Thread
-						if (connectThread != null && connectThread.isAlive())
-							connectThread.interrupt();
-						webSocketManager.disconnect();
-						connectThread = null;
-					}
-				}
-				try {
-					// We timeout here to avoid always checking
-					Thread.sleep(timeout * 1000);
-				} catch (InterruptedException ex) {
-					// No need to catch this exception
-				}
-			}
-		}, "WebSocketManager - AutoReconnect");
+	public WebSocketManager(URI websocketURI) {
+		this.websocketURI = websocketURI;
 	}
 
-	public void startThread() {
-		if (runThread)
+	public void login() throws URISyntaxException {
+		LOG.debug("login()");
+		if (client != null && client.isConnected()) {
+			LOG.debug("login(): client already connected");
 			return;
-		// Start
-		this.runThread = true;
-		thread.start();
+		}
+		client = WebSocketFactory.client(websocketURI, new WebSocketTokenAuthentication(Froxy.getNetworkManager()));
+		client.registerWebSocketAuthentication(() -> {
+			// TODO
+		});
+
+		// Commands
+		client.registerCommand(new ServerRegisterCommander());
+		client.registerCommand(new ServerUnregisterCommander());
+		client.registerCommand(new ServerStopCommand());
+
+		WebSocketAutoReconnectModule wsarm = new WebSocketAutoReconnectModule(5000);
+		client.registerWebSocketDisconnection(remote -> {
+			if (!stop)
+				return;
+			wsarm.unload();
+		});
+		client.addModule(wsarm);
+
+		// Commands
+
+		LOG.debug("login() ok");
 	}
 
-	/**
-	 * Connects to the WebSocket and authentificates itself<br />
-	 * This method create a new Thread ! To be notified, see
-	 * {@link com.froxynetwork.froxynetwork.network.websocket.WebSocketManager#registerWebSocketAuthentified(Runnable)}
-	 */
-	private void connect() {
-		connectThread = new Thread(() -> {
-			if (Froxy.getNetworkManager().isTokenExpired()) {
-				LOG.info("Expired token, asking another one");
-				// Expired token, asking another one
-				try {
-					// Used to get a new token
-					Froxy.getNetworkManager().getNetwork().getServerConfigService().syncGetServerConfig();
-				} catch (Exception ex) {
-					// We don't have to handle exceptions (even if an exception here is strange)
-					// because we only need the token
-				}
-				// Test if token is still expired
-				if (Froxy.getNetworkManager().isTokenExpired()) {
-					// Error
-					LOG.error("Token is still expired !");
-					return;
-				}
-			}
-			webSocketManager.connect("bungeecord", clientId, Froxy.getNetworkManager().getAuthenticationToken());
-		}, "WebSocketManager-core-connect");
-		connectThread.start();
-	}
+	private boolean loaded = false;
 
-	public void disconnect() {
-		webSocketManager.disconnect();
-		connectThread = null;
+	public void load() throws URISyntaxException {
+		if (loaded)
+			return;
+		login();
+		loaded = true;
 	}
 
 	public void stop() {
-		disconnect();
-		runThread = false;
+		stop = true;
+		client.disconnect(CloseFrame.NORMAL, "");
+		client.closeAll();
 	}
 }

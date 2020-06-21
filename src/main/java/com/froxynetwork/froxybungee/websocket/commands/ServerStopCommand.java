@@ -1,15 +1,16 @@
 package com.froxynetwork.froxybungee.websocket.commands;
 
-import java.util.regex.Pattern;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.froxynetwork.froxybungee.Froxy;
 import com.froxynetwork.froxynetwork.network.websocket.IWebSocketCommander;
 
+import net.md_5.bungee.api.ProxyServer;
+
 /**
- * FroxyBungee Copyright (C) 2019 FroxyNetwork
+ * FroxyCore
+ * 
+ * Copyright (C) 2019 FroxyNetwork
  * 
  * This program is free software: you can redistribute it and/or modify it under
  * the terms of the GNU General Public License as published by the Free Software
@@ -26,33 +27,23 @@ import com.froxynetwork.froxynetwork.network.websocket.IWebSocketCommander;
  *
  * @author 0ddlyoko
  */
-public class ServerRegisterCommander implements IWebSocketCommander {
+public class ServerStopCommand implements IWebSocketCommander {
 	private final Logger LOG = LoggerFactory.getLogger(getClass());
-	private Pattern spacePattern = Pattern.compile(" ");
 
 	@Override
 	public String name() {
-		return "register";
+		return "stop";
 	}
 
 	@Override
 	public String description() {
-		return "On server start";
+		return "Stop this server";
 	}
 
 	@Override
 	public void onReceive(String message) {
-		// register <id> <type>
-		String[] split = spacePattern.split(message);
-		if (split.length < 2) {
-			// Error
-			LOG.error("Invalid message: {}", message);
-			return;
-		}
-		String id = split[0];
-		String type = split[1];
-
-		// All seams ok
-		Froxy.getServerManager().registerServer(id, type);
+		LOG.info("Got stop command, stopping ...");
+		// TODO Find a better way to shutdown this server
+		ProxyServer.getInstance().stop("Stopping ...");
 	}
 }
