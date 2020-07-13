@@ -4,7 +4,7 @@ import com.froxynetwork.froxynetwork.network.output.data.server.ServerDataOutput
 
 /**
  * FroxyBungee
- * Copyright (C) 2019 FroxyNetwork
+ * Copyright (C) 2020 FroxyNetwork
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,7 +25,11 @@ import com.froxynetwork.froxynetwork.network.output.data.server.ServerDataOutput
  * The status of the server
  */
 public enum ServerStatus {
-	STARTING, WAITING, STARTED, ENDING, ENDED;
+	STARTING, //
+	WAITING, //
+	STARTED, //
+	ENDING, //
+	ENDED;
 
 	public static ServerStatus fromNetwork(ServerDataOutput.ServerStatus ss) {
 		switch (ss) {
