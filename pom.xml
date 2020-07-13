@@ -111,14 +111,14 @@
 		<dependency>
 			<groupId>com.froxynetwork</groupId>
 			<artifactId>FroxyNetwork</artifactId>
-			<version>0.1.4</version>
+			<version>${project.version}</version>
 		</dependency>
 
 		<!-- Game -->
 		<dependency>
 			<groupId>com.froxynetwork</groupId>
 			<artifactId>FroxyGame</artifactId>
-			<version>0.1.4</version>
+			<version>${project.version}</version>
 		</dependency>
 
 		<!-- BungeeCord -->
